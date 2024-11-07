@@ -1,0 +1,64 @@
+version = 0.1
+
+[default]
+
+[default.build.parameters]
+parallel = true
+
+[default.validate.parameters]
+lint = true
+
+[prod.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+disable_rollback = false
+log_retention = 7
+parameter_overrides = [
+  "VPCId=vpc-abc12345",
+  "SubnetId1=subnet-abc12345",
+  "SubnetId2=subnet-abc12345",
+  "RDSInstanceSecurityGroup=sg-abc12345",
+  "paramCountry=xx",
+  "paramEnvironment=prod",
+]
+profile = "profile-name"
+region = "us-west-1"
+resolve_s3 = true
+s3_prefix = "tm-pragmadev-xx-prod-activity-crowder"
+stack_name = "xx-prod-activity-crowder"
+tags = [
+  "environment=prod",
+  "project=Activity Crowder Data Ingestion",
+  "country=xx",
+  "managed-by=AWS SAM",
+]
+
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+disable_rollback = false
+log_retention = 7
+parameter_overrides = [
+  "VPCId=vpc-abc12345",
+  "SubnetId1=subnet-abc12345",
+  "SubnetId2=subnet-abc12345",
+  "RDSInstanceSecurityGroup=sg-abc12345",
+  "paramCountry=xx",
+  "paramEnvironment=dev",
+]
+profile = "profile-name"
+region = "us-west-2"
+resolve_s3 = true
+s3_prefix = "tm-pragmadev-xx-dev-activity-crowder"
+stack_name = "xx-dev-activity-crowder"
+tags = [
+  "environment=dev",
+  "project=Activity Crowder Data Ingestion",
+  "country=xx",
+  "managed-by=AWS SAM",
+]
+
+[default.package.parameters]
+resolve_s3 = true
+
+[default.sync.parameters]
+watch = true

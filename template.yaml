@@ -1,0 +1,309 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  paramEnvironment:
+    Type: String
+    AllowedValues:
+      - dev
+      - prod
+    Default: prod
+  paramCountry:
+    Type: String
+  VPCId:
+    Type: String
+  SubnetId1:
+    Type: String
+  SubnetId2:
+    Type: String
+  RDSInstanceSecurityGroup:
+    Type: String
+
+Globals:
+  Api:
+    TracingEnabled: true
+  Function:
+    Layers:
+      - !Ref LayerDependencies
+      - !Ref LayerFunctions
+    Runtime: nodejs18.x
+    Timeout: 120
+    Tracing: Active
+    Environment:
+      Variables:
+        AWS_NODEJS_CONNECTION_REUSE_ENABLED: 1
+        CROWDER_APIKEY: !Sub "/${AWS::StackName}/api/apikey"
+        CROWDER_HOST: !Sub "/${AWS::StackName}/api/host"
+        CROWDER_LASTUPDATE: !Sub "/${AWS::StackName}/api/lastUpdate"
+        CROWDER_MOVEMENTID: !Sub "/${AWS::StackName}/api/movementId"
+        RDS_HOST: !Sub "/${AWS::StackName}/rds/host"
+        RDS_USER: !Sub "/${AWS::StackName}/rds/user"
+        RDS_PASSWORD: !Sub "/${AWS::StackName}/rds/password"
+        RDS_DATABASE: !Sub "/${AWS::StackName}/rds/database"
+        RDS_PORT: !Sub "/${AWS::StackName}/rds/port"
+        RDS_TABLE: !Sub "/${AWS::StackName}/rds/table"
+
+Resources:
+
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub "tm-pragmadev-${AWS::StackName}-api"
+      StageName: Prod
+      Auth:
+        ApiKeyRequired: true
+        UsagePlan:
+          CreateUsagePlan: PER_API
+          UsagePlanName: !Sub "tm-pragmadev-${AWS::StackName}-plan"
+      Cors:
+        AllowMethods: "'*'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+
+  DataStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: !Sub "tm-pragmadev-${AWS::StackName}-stream"
+      StreamModeDetails:
+        StreamMode: ON_DEMAND
+        
+  FetchDataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/fetch/handler.handler
+      MemorySize: 256
+      FunctionName: !Sub "tm-pragmadev-${AWS::StackName}-fetch-data"
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 minute)
+      Environment:
+        Variables:
+          STREAM_NAME: !Ref DataStream
+          TRACKING_TABLE: !Ref RecordTrackingTable
+          BUCKET_NAME: !Ref RecordTrackingBucket
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref RecordTrackingBucket
+        - KinesisCrudPolicy:
+            StreamName: !Ref DataStream
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RecordTrackingTable
+        - Statement:
+            Effect: Allow
+            Action:
+              - ssm:PutParameter
+              - ssm:GetParameters
+            Resource: '*'
+
+  ProcessDataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/process/handler.handler
+      MemorySize: 256
+      Timeout: 360
+      FunctionName: !Sub "tm-pragmadev-${AWS::StackName}-process-data"
+      VpcConfig:
+        SecurityGroupIds: 
+          - !Ref LambdaSecurityGroup
+        SubnetIds: 
+          - !Ref SubnetId1
+          - !Ref SubnetId2
+      Events:
+        KinesisEvent:
+          Type: Kinesis
+          Properties:
+            Stream: !GetAtt DataStream.Arn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 20
+            ParallelizationFactor: 2
+      Environment:
+        Variables:
+          TRACKING_TABLE: !Ref RecordTrackingTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RecordTrackingTable
+        - Statement:
+            Effect: Allow
+            Action:
+              - ssm:PutParameter
+              - ssm:GetParameters
+              - rds-data:ExecuteStatement
+            Resource: '*'
+
+  ListRecordFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/api/handler.list
+      FunctionName: !Sub "tm-pragmadev-${AWS::StackName}-list-records"
+      Events:
+        ListEvents:
+          Type: Api
+          Properties:
+            Path: /records
+            Method: GET
+            RestApiId: !Ref ApiGateway
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RecordTrackingTable
+      Environment:
+        Variables:
+          TRACKING_TABLE: !Ref RecordTrackingTable
+
+  GetRecordFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/api/handler.get
+      FunctionName: !Sub "tm-pragmadev-${AWS::StackName}-get-record"
+      Events:
+        ListEvents:
+          Type: Api
+          Properties:
+            Path: /record/{recordId}
+            Method: GET
+            RestApiId: !Ref ApiGateway
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RecordTrackingTable
+      Environment:
+        Variables:
+          TRACKING_TABLE: !Ref RecordTrackingTable
+
+  RecordDataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/api/handler.data
+      FunctionName: !Sub "tm-pragmadev-${AWS::StackName}-get-record-data"
+      Events:
+        ListEvents:
+          Type: Api
+          Properties:
+            Path: /record/{recordId}/data
+            Method: GET
+            RestApiId: !Ref ApiGateway
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RecordTrackingTable
+        - S3CrudPolicy:
+            BucketName: !Ref RecordTrackingBucket
+      Environment:
+        Variables:
+          TRACKING_TABLE: !Ref RecordTrackingTable
+          BUCKET_NAME: !Ref RecordTrackingBucket
+
+  RetryProcessFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/retry/handler.handler
+      Timeout: 360
+      FunctionName: !Sub "tm-pragmadev-${AWS::StackName}-retry"
+      VpcConfig:
+        SecurityGroupIds: 
+          - !Ref LambdaSecurityGroup
+        SubnetIds: 
+          - !Ref SubnetId1
+          - !Ref SubnetId2
+      Events:
+        ListEvents:
+          Type: Api
+          Properties:
+            Path: /retry
+            Method: POST
+            RestApiId: !Ref ApiGateway
+      Environment:
+        Variables:
+          TRACKING_TABLE: !Ref RecordTrackingTable
+          BUCKET_NAME: !Ref RecordTrackingBucket
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref RecordTrackingBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RecordTrackingTable
+        - Statement:
+            Effect: Allow
+            Action:
+              - ssm:PutParameter
+              - ssm:GetParameters
+              - rds-data:ExecuteStatement
+            Resource: '*'
+        - Statement: 
+            Effect: Allow
+            Action:
+              - dynamodb:BatchGetItem
+            Resource: 
+              - !GetAtt RecordTrackingTable.Arn 
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub "tm-pragmadev-${AWS::StackName}-sg"
+      GroupDescription: Security group for Lambda function
+      VpcId: !Ref VPCId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 1433
+          ToPort: 1433
+          SourceSecurityGroupId: !Ref RDSInstanceSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: -1 
+          CidrIp: 0.0.0.0/0
+
+  RecordTrackingBucket:
+    Type: AWS::S3::Bucket
+    Properties: 
+      BucketName: !Sub "tm-pragmadev-${AWS::StackName}-record"
+      LifecycleConfiguration:
+        Rules:
+          - Id: "DeleteAfter07Days"
+            Status: "Enabled"
+            ExpirationInDays: 7
+
+#RECORD Database         
+  RecordTrackingTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "tm-pragmadev-${AWS::StackName}-record"
+      AttributeDefinitions:
+        - AttributeName: recordId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: recordId
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: expireAt
+        Enabled: true
+
+#LAYER Dependencies
+  LayerDependencies:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "tm-pragmadev-${AWS::StackName}-layer-dependecies"
+      ContentUri: layers/dependencies/.
+      CompatibleRuntimes:
+        - nodejs18.x
+      RetentionPolicy: Retain
+    Metadata:
+      BuildMethod: nodejs18.x
+
+#LAYER Functions
+  LayerFunctions:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub "tm-pragmadev-${AWS::StackName}-layer-functions"
+      ContentUri: layers/functions/.
+      CompatibleRuntimes:
+        - nodejs18.x
+      RetentionPolicy: Retain
+
+Outputs:
+  ApiEndpoint:
+    Description: "API Gateway orginal endpoint URL"
+    Value: !Sub "https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+  ApiKey:
+    Description: "You can find your API Key in the AWS console: (Put in the request HEADER as 'x-api-key')"
+    Value: !Sub "https://console.aws.amazon.com/apigateway/home?region=${AWS::Region}#/api-keys/${ApiGatewayApiKey}"
+  BucketName:
+    Description: "Name of the S3 Bucket Table for Record Tracking"
+    Value: !Ref RecordTrackingBucket

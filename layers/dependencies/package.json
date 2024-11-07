@@ -1,0 +1,21 @@
+{
+  "name": "roda-rico",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.1377.0",
+    "aws-xray-sdk": "^3.10.1",
+    "axios": "^1.4.0",
+    "crypto": "^1.0.1",
+    "mssql": "^11.0.1",
+    "nanoid": "^3.3.7",
+    "zlib": "^1.0.5"
+  }
+}
