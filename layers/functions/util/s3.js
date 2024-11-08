@@ -24,7 +24,7 @@ exports.put = async (data) => {
         return `${BUCKET_NAME}/${filename}`
 
     } catch (ex) {
-        console.error("Error uploading file to S3:", error);
+        console.error("Error uploading file to S3");
         throw ex;
     }
 
@@ -42,7 +42,7 @@ exports.get = async (file) => {
         return JSON.parse(util.decompress(Buffer.from(data.Body.toString('utf-8'), 'base64')))
 
     } catch (ex) {
-        console.error("Error getting S3 file:", ex);
+        console.error("Error getting S3 file:");
         throw ex;
     }
 }

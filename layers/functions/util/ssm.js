@@ -15,7 +15,7 @@ exports.retrieveParams = async (paramName) => {
             WithDecryption: true,
         }).promise();
     } catch (ex) {
-        console.error("Error retrieving SSM parameters:", ex.message);
+        console.error("Error retrieving SSM parameters");
         throw ex;
     }
 };
@@ -24,7 +24,7 @@ const updateParams = async (params) => {
     try {
         return await ssmClient.putParameter(params).promise();
     } catch (ex) {
-        console.error("Error updating SSM parameters:", ex.message);
+        console.error("Error updating SSM parameters");
         throw ex;
     }
 
@@ -39,7 +39,7 @@ exports.updateLastUpdate = async (lastUpdate) => {
             Type: 'String'
         });
     } catch (ex) {
-        console.error(`Error updating ${LAST_UPDATE} SSM parameters:`, ex.message);
+        console.error(`Error updating ${LAST_UPDATE} SSM parameters:`);
         throw ex;
     }
 };
@@ -53,7 +53,7 @@ exports.updateLastMovementId = async (lastMovementId) => {
             Type: 'String'
         });
     } catch (ex) {
-        console.error(`Error updating ${MOVEMENT_ID} SSM parameters:`, ex.message);
+        console.error(`Error updating ${MOVEMENT_ID} SSM parameters:`);
         throw ex;
     }
 };
@@ -66,7 +66,7 @@ exports.getLastUpdate = async () => {
         return params.Parameters.find((ssm) => ssm.Name === LAST_UPDATE).Value;
 
     } catch (ex) {
-        console.error(`Error getting ${LAST_UPDATE} SSM parameters:`, ex.message);
+        console.error(`Error getting ${LAST_UPDATE} SSM parameters:`);
         throw ex;
     }
 }
@@ -79,7 +79,7 @@ exports.getLastMovementId = async () => {
         return params.Parameters.find((ssm) => ssm.Name === MOVEMENT_ID).Value;
 
     } catch (ex) {
-        console.error(`Error getting ${MOVEMENT_ID} SSM parameters:`, ex.message);
+        console.error(`Error getting ${MOVEMENT_ID} SSM parameters:`);
         throw ex;
     }
 }

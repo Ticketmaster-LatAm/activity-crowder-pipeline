@@ -30,7 +30,7 @@ exports.put = async (params) => {
         return response;
 
     } catch (ex) {
-        console.error("Error putting records to Kinesis:", ex.message);
+        console.error("Error putting records to Kinesis:");
         throw ex;
     }
 }

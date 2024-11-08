@@ -55,7 +55,7 @@ exports.request = async (lastUpdate, movimentId) => {
     return response.data;
 
   } catch (ex) {
-    console.error("Error in API request:", ex.message);
+    console.error("Error in API request");
     throw ex;
   }
 };

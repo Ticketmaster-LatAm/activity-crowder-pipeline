@@ -18,6 +18,12 @@ Parameters:
     Type: String
   RDSInstanceSecurityGroup:
     Type: String
+  paramHostedZoneId:
+    Type: String
+  paramCertificateId:
+    Type: String
+  paramDomainName:
+    Type: String
 
 Globals:
   Api:
@@ -59,7 +65,13 @@ Resources:
         AllowMethods: "'*'"
         AllowHeaders: "'*'"
         AllowOrigin: "'*'"
-
+      Domain:
+        DomainName: !Ref paramDomainName
+        CertificateArn: !Sub arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/${paramCertificateId}
+        EndpointConfiguration: REGIONAL
+        Route53:
+          HostedZoneId: !Ref paramHostedZoneId
+          
   DataStream:
     Type: AWS::Kinesis::Stream
     Properties:
@@ -73,11 +85,6 @@ Resources:
       Handler: src/fetch/handler.handler
       MemorySize: 256
       FunctionName: !Sub "tm-pragmadev-${AWS::StackName}-fetch-data"
-      Events:
-        ScheduleEvent:
-          Type: Schedule
-          Properties:
-            Schedule: rate(1 minute)
       Environment:
         Variables:
           STREAM_NAME: !Ref DataStream
@@ -96,6 +103,27 @@ Resources:
               - ssm:PutParameter
               - ssm:GetParameters
             Resource: '*'
+
+  FetchDataScheduleRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "tm-pragmadev-${AWS::StackName}-fetch-data-schedule"
+      ScheduleExpression: rate(1 minute)
+      State: DISABLED
+      Targets:
+        - Arn: !GetAtt FetchDataFunction.Arn
+          Id: "FetchDataTarget"
+          RetryPolicy:
+            MaximumRetryAttempts: 0
+    DependsOn: FetchDataFunction
+
+  FetchDataPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt FetchDataFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt FetchDataScheduleRule.Arn
 
   ProcessDataFunction:
     Type: AWS::Serverless::Function
@@ -131,6 +159,42 @@ Resources:
               - ssm:GetParameters
               - rds-data:ExecuteStatement
             Resource: '*'
+
+#API Lambdas
+  EnableScheduleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/api/handler.schedule
+      FunctionName: !Sub "tm-pragmadev-${AWS::StackName}-fetch-control-enable"
+      Events:
+        ListEvents:
+          Type: Api
+          Properties:
+            Path: /schedule
+            Method: POST
+            RestApiId: !Ref ApiGateway
+      Environment:
+        Variables:
+          RULE_NAME: !Ref FetchDataScheduleRule
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RecordTrackingTable
+        - Statement:
+            Effect: Allow
+            Action:
+              - ssm:PutParameter
+              - ssm:GetParameters
+              - rds-data:ExecuteStatement
+            Resource: '*'
+      Policies:
+        - Statement:
+            Effect: Allow
+            Action:
+              - events:PutRule
+              - events:DescribeRule
+              - events:PutTargets
+              - events:RemoveTargets
+            Resource: !GetAtt FetchDataScheduleRule.Arn
 
   ListRecordFunction:
     Type: AWS::Serverless::Function

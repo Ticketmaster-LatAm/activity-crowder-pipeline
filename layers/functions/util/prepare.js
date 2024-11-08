@@ -171,7 +171,6 @@ exports.data = async (movements) => {
       if (movement.tickets.length > 1) {
         comboValue = 1;
       }
-
       movement.tickets.forEach(ticket => {
         const ticketRow = ensureKeys({
           ...baseRow,
@@ -180,9 +179,11 @@ exports.data = async (movements) => {
         }, headers);
         allRows.push(cleanData(ticketRow)); // combo deve estar no ticketRow
       });
+
     } else {
       allRows.push(cleanData({ ...baseRow, combo: comboValue })); // Adicionando a coluna Combo
     }
+
   });
 
   return clean(allRows);

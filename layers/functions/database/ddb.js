@@ -64,7 +64,7 @@ exports.put = async (item) => {
 };
 
 exports.list = async (params) => {
-  let { limit = SCAN_LIMIT, next, statusCode } = params || {};
+  let { limit = SCAN_LIMIT, next, statusCode, lastUpdate, lastMovementId } = params || {};
   let limitData = [];
   let lastEvaluatedKey;
 
@@ -80,6 +80,18 @@ exports.list = async (params) => {
 
     filterExpressions.push("statusCode = :statusCode");
     expressionAttributeValues[":statusCode"] = statusCode;
+  }
+
+  if (typeof lastUpdate !== "undefined") {
+
+    filterExpressions.push("lastUpdate = :lastUpdate");
+    expressionAttributeValues[":lastUpdate"] = parseInt(lastUpdate);
+  }
+
+  if (typeof lastMovementId !== "undefined") {
+
+    filterExpressions.push("lastMovementId = :lastMovementId");
+    expressionAttributeValues[":lastMovementId"] = parseInt(lastMovementId);
   }
 
   if (filterExpressions.length > 0) {

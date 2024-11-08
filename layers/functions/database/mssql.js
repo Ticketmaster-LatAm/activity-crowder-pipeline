@@ -54,9 +54,9 @@ const connect = async () => {
             requestTimeout: 45000
         });
         return pool;
-    } catch (error) {
-        console.error('Error connecting to MSSQL database:', error);
-        throw error;
+    } catch (ex) {
+        console.error('Error connecting to MSSQL database');
+        throw ex;
     }
 }
 
@@ -127,7 +127,7 @@ exports.insertBatch = async (data) => {
         }
 
     } catch (ex) {
-        console.error('Error in batch insert:', ex.message);
+        console.error('Error in batch insert');
         throw ex;
     }
 };
@@ -140,7 +140,7 @@ exports.clearTable = async () => {
         await pool.request().query(`TRUNCATE TABLE ${cachedParams.table}`);
 
     } catch (ex) {
-        console.error('Error in clear table:', ex.message);
+        console.error('Error in clear table');
         throw ex;
     }
 }

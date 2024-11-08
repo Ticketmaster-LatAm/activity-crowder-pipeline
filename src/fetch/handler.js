@@ -106,9 +106,10 @@ exports.handler = async (event) => {
 
                 chunk.push({
                     ...item,
-                    lastMovementId: currentMovementId,
-                    nextLastUpdate: lastUpdate,
-                    nextLastMovementId: lastMovementId,
+                    lastUpdateSearch: currentLastUpdate,
+                    lastUpdateSearchNext: lastUpdate,
+                    lastMovementIdSearch: currentMovementId,
+                    lastMovementIdNext: lastMovementId,
                 });
 
                 if (chunk.length === MAX_CHUNK_SIZE) {
