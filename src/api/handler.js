@@ -47,8 +47,8 @@ exports.data = async (event) => {
     const movements = await s3.get(`${path[1]}/${path[2]}`);
 
     response.body = JSON.stringify({
-      moviments: movements.payload.length,
-      data: movements.payload
+      moviments: movements.length,
+      data: movements
     });
 
     return response;

@@ -40,22 +40,9 @@ const processChunk = async (chunk, batch, lastUpdate, lastMovementId) => {
             }),
         };
 
-        const s3Payload = {
-            recordId,
-            chunk: chunk.length,
-            element: batch.length,
-            hash: chunkMD5Hash,
-            payload: chunk,
-            timestamp: new Date().toISOString(),
-            lastUpdate,
-            lastMovementId,
-        };
-
         const pathFile = await s3.put({ 
-            filename: `data/${recordId}.gz`,
-            payload: s3Payload,
-            contentEnconding: "application/json",
-            contentType: "gzip",
+            filename: recordId,
+            payload: chunk,
         });
         
         await ddb.updatePath({ key: recordId, path: pathFile });

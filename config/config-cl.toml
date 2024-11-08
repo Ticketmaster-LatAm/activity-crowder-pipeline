@@ -21,7 +21,7 @@ parameter_overrides = [
   "paramCountry=cl",
   "paramEnvironment=prod",
   "paramDomainName=activity.cl.pragmadev.com.br",
-  "paramCertificateId=d44dd647-97f8-45c1-ba03-6e12cbf1341f",
+  "paramCertificateId=cb72e031-0f08-4064-89bb-1f6b16a57d04",
   "paramHostedZoneId=Z052296833IA491A0PGKH",
 ]
 profile = "pragma-cl-prod"
@@ -48,7 +48,7 @@ parameter_overrides = [
   "paramCountry=cl",
   "paramEnvironment=dev",
   "paramDomainName=activity-dev.cl.pragmadev.com.br",
-  "paramCertificateId=08ffa506-3a1f-4426-8737-b3102e9b29cf",
+  "paramCertificateId=3fc971b2-4a86-43ba-873b-abc6f1fcab79",
   "paramHostedZoneId=Z052296833IA491A0PGKH",
 ]
 profile = "pragma-cl-dev"
