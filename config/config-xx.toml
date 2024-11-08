@@ -20,6 +20,9 @@ parameter_overrides = [
   "RDSInstanceSecurityGroup=sg-abc12345",
   "paramCountry=xx",
   "paramEnvironment=prod",
+  "paramDomainName=activity.xx.pragmadev.com.br",
+  "paramCertificateId=xxxb-cxx9-45xx5-adx-b0xxxxxxfe",
+  "paramHostedZoneId=ZASADAZ4AF5",
 ]
 profile = "profile-name"
 region = "us-west-1"
@@ -44,6 +47,9 @@ parameter_overrides = [
   "RDSInstanceSecurityGroup=sg-abc12345",
   "paramCountry=xx",
   "paramEnvironment=dev",
+  "paramDomainName=activity-dev.xx.pragmadev.com.br",
+  "paramCertificateId=xxxb-cxx9-45xx5-adx-b0xxxxxxfe",
+  "paramHostedZoneId=ZASADAZ4AF5",
 ]
 profile = "profile-name"
 region = "us-west-2"

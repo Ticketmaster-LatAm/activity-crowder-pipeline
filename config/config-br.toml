@@ -20,8 +20,11 @@ parameter_overrides = [
   "RDSInstanceSecurityGroup=sg-085e218124666ca35",
   "paramCountry=br",
   "paramEnvironment=prod",
+  "paramDomainName=activity.br.pragmadev.com.br",
+  "paramCertificateId=8752660b-c979-45b5-ad84-b00d8b3006fe",
+  "paramHostedZoneId=Z0821820KEVZXM5H90NU",
 ]
-profile = "pragma-bra-dev"
+profile = "pragma-bra-prod"
 region = "us-west-1"
 resolve_s3 = true
 s3_prefix = "tm-pragmadev-br-prod-activity-crowder"
@@ -44,6 +47,9 @@ parameter_overrides = [
   "RDSInstanceSecurityGroup=sg-085e218124666ca35",
   "paramCountry=br",
   "paramEnvironment=dev",
+  "paramDomainName=activity-dev.br.pragmadev.com.br",
+  "paramCertificateId=a2bfa6bc-3a10-494f-801f-69d520c0349f",
+  "paramHostedZoneId=Z0821820KEVZXM5H90NU",
 ]
 profile = "pragma-bra-dev"
 region = "us-west-2"
